@@ -16,7 +16,7 @@ Run the `create-oidc.bash`, and supply the two mandatory parameters:
 For example, if I wanted to authenticate from my stclaird account or organisation  and the repository myrepo from any branch. 
 
 ```
-bash create-oidc.bash -a 1234567890 -r stclaird/myrepo:*
+bash create-oidc.bash -a 1234567890 -r "stclaird/myrepo:*" -n github-actions-eks
 ```
 
 Note, The last part can be an asterisks wildcard to represent all branches.  
