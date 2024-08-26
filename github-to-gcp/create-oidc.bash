@@ -1,4 +1,6 @@
 #!/bin/bash
+# bash -x create-oidc.bash -g my-gcp-project-id -r "my-user-or-my-org/my-repo" -p "my-pool" -o "my-oicd" -s "my-sa"
+
 
 while getopts :g:p:o:s:r: flag
 do
@@ -42,6 +44,9 @@ then
   read -r REPO
 fi
 
+
+PROJECT_NUM=$(gcloud projects list --filter="ewnonprod" --format="value(PROJECT_NUMBER)")
+
 gcloud iam workload-identity-pools create ${WIP_POOL_NAME} \
   --project="${PROJECT_ID}" \
   --location="global" \
@@ -50,7 +55,7 @@ gcloud iam workload-identity-pools create ${WIP_POOL_NAME} \
 gcloud iam workload-identity-pools providers create-oidc ${WIP_OIDC_PROVIDER} \
   --project="${PROJECT_ID}" \
   --location="global" \
-  --workload-identity-pool= ${WIP_POOL_NAME} \
+  --workload-identity-pool="${WIP_POOL_NAME}" \
   --display-name="${WIP_OIDC_PROVIDER} OIDC" \
   --attribute-mapping="google.subject=assertion.sub,attribute.actor=assertion.actor,attribute.aud=assertion.aud,attribute.repository=assertion.repository" \
   --issuer-uri="https://token.actions.githubusercontent.com"
@@ -58,12 +63,6 @@ gcloud iam workload-identity-pools providers create-oidc ${WIP_OIDC_PROVIDER} \
 gcloud iam service-accounts create ${SA_NAME} \
 --display-name="${SA_NAME} Service Account" \
 --project ${PROJECT_ID}
-
-for  role in "iam.serviceAccountTokenCreator" do
-    gcloud projects add-iam-policy-binding ${PROJECT_ID} \
-    --member="serviceAccount:$SA_NAME@$PROJECT_ID.iam.gserviceaccount.com" \
-    --role="roles/$role"
-done
 
 gcloud iam service-accounts add-iam-policy-binding $SA_NAME@$PROJECT_ID.iam.gserviceaccount.com \
   --project="${PROJECT_ID}" \
