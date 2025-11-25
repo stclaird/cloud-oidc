@@ -45,7 +45,7 @@ then
 fi
 
 
-PROJECT_NUM=$(gcloud projects list --filter="ewnonprod" --format="value(PROJECT_NUMBER)")
+PROJECT_NUM=$(gcloud projects list --filter="$PROJECT_ID" --format="value(PROJECT_NUMBER)")
 
 gcloud iam workload-identity-pools create ${WIP_POOL_NAME} \
   --project="${PROJECT_ID}" \
@@ -68,3 +68,12 @@ gcloud iam service-accounts add-iam-policy-binding $SA_NAME@$PROJECT_ID.iam.gser
   --project="${PROJECT_ID}" \
   --role="roles/iam.workloadIdentityUser" \
   --member="principalSet://iam.googleapis.com/projects/${PROJECT_NUM}/locations/global/workloadIdentityPools/$WIP_POOL_NAME/attribute.repository/$REPO"
+
+echo ""
+echo "========================================="
+echo "Setup Complete! Use these values in your GitHub Action:"
+echo "========================================="
+echo ""
+echo "workload_identity_provider: 'projects/${PROJECT_NUM}/locations/global/workloadIdentityPools/${WIP_POOL_NAME}/providers/${WIP_OIDC_PROVIDER}'"
+echo "service_account: '${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com'"
+echo ""

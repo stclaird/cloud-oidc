@@ -11,15 +11,15 @@ Run the `create-oidc.bash`, and supply the two mandatory parameters:
 
  -a AWS account id string 1234567890
 
- -r The repository hosting the actions in the following format `<GITHUB-ORGANISATION>/<MY_REPOSITORY>:<BRANCH>`.  
+ -r The repository hosting the actions in the following format `<GITHUB-ORGANISATION>/<MY_REPOSITORY>:<BRANCH>`.
 
-For example, if I wanted to authenticate from my stclaird account or organisation  and the repository myrepo from any branch. 
+For example, if I wanted to authenticate from my stclaird account or organisation  and the repository myrepo from any branch.
 
 ```
 bash create-oidc.bash -a 1234567890 -r "stclaird/myrepo:*" -n github-actions-eks
 ```
 
-Note, The last part can be an asterisks wildcard to represent all branches.  
+Note, The last part can be an asterisks wildcard to represent all branches.
 
 This will perform the following operations:
 
@@ -39,3 +39,53 @@ This will output an ARN of the IAM role to assume.  This can be used in a github
         aws-region: us-west-2
 ```
 
+### Setting up GCP Authentication from GITHUB Actions
+Change to the `github-to-gcp` directory.
+
+Run the `create-oidc.bash` script with the following parameters:
+
+ -g GCP project ID (e.g., `my-project-id`)
+
+ -p Workload Identity Pool name (e.g., `github-pool`)
+
+ -o OIDC provider name (e.g., `github-oidc`)
+
+ -s Service Account name (e.g., `github-actions-sa`)
+
+ -r The repository in the format `<GITHUB-ORGANISATION>/<MY_REPOSITORY>`
+
+For example, if you want to authenticate from the `stclaird/myrepo` repository:
+
+```bash
+cd github-to-gcp
+bash create-oidc.bash -g my-gcp-project -p github-pool -o github-oidc -s github-actions-sa -r "stclaird/myrepo"
+```
+
+This will perform the following operations:
+
+- Creates a Workload Identity Pool in your GCP project
+- Creates an OIDC provider configured for GitHub Actions
+- Creates a service account for GitHub Actions to use
+- Binds the service account with the Workload Identity Pool for your specific repository
+- Outputs the values needed for your GitHub Action workflow
+
+The script will output something like:
+
+```
+=========================================
+Setup Complete! Use these values in your GitHub Action:
+=========================================
+
+workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/github-pool/providers/github-oidc'
+service_account: 'github-actions-sa@my-gcp-project.iam.gserviceaccount.com'
+```
+
+Use these values in your GitHub Action with the official Google Auth action:
+
+```yaml
+- name: Authenticate to Google Cloud
+  uses: google-github-actions/auth@v1
+  with:
+    workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/github-pool/providers/github-oidc'
+    service_account: 'github-actions-sa@my-gcp-project.iam.gserviceaccount.com'
+```
