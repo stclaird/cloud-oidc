@@ -57,7 +57,8 @@ gcloud iam workload-identity-pools providers create-oidc ${WIP_OIDC_PROVIDER} \
   --location="global" \
   --workload-identity-pool="${WIP_POOL_NAME}" \
   --display-name="${WIP_OIDC_PROVIDER} OIDC" \
-  --attribute-mapping="google.subject=assertion.sub,attribute.actor=assertion.actor,attribute.aud=assertion.aud,attribute.repository=assertion.repository" \
+  --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository,attribute.repository_owner=assertion.repository_owner" \
+  --attribute-condition="assertion.repository == '${REPO}'" \
   --issuer-uri="https://token.actions.githubusercontent.com"
 
 gcloud iam service-accounts create ${SA_NAME} \
