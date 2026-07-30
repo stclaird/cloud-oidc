@@ -43,7 +43,28 @@ OPENIDPROVIDERARN=$(aws iam create-open-id-connect-provider \
 	--thumbprint-list ${THUMBLIST} \
 	| jq -r .OpenIDConnectProviderArn)
 
-envsubst < trust-policy.json.tmpl > trust-policy.json
+cat > trust-policy.json <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Principal": {
+          "Federated": "arn:aws:iam::${AWS_ACCOUNT_ID}:oidc-provider/token.actions.githubusercontent.com"
+        },
+        "Action": "sts:AssumeRoleWithWebIdentity",
+        "Condition": {
+            "StringEquals": {
+              "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
+            },
+            "StringLike": {
+              "token.actions.githubusercontent.com:sub": "repo:${REPO_VALUE}"
+            }
+        }
+      }
+    ]
+}
+EOF
 aws iam create-role --role-name ${ROLE_NAME} --assume-role-policy-document file://trust-policy.json > /dev/null
 ROLE_ARN=$(aws iam get-role --role-name  ${ROLE_NAME} | jq -r '.Role .Arn')
 echo "This is the role-to-assume: ${ROLE_ARN}"
