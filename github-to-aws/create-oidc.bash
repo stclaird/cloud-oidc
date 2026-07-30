@@ -34,14 +34,21 @@ export ROLE_NAME=$name
 
 echo $name
 
-openssl s_client -servername token.actions.githubusercontent.com -showcerts -connect token.actions.githubusercontent.com:443 < /dev/null 2>/dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sed "0,/-END CERTIFICATE-/d" > certificate.crt
-THUMBLIST=$(openssl x509 -in certificate.crt -fingerprint -noout | cut -f2 -d'=' | tr -d ':' | tr '[:upper:]' '[:lower:]')
+OPENIDPROVIDERARN=$(aws iam list-open-id-connect-providers | jq -r '.OpenIDConnectProviderList[].Arn' | grep '/token.actions.githubusercontent.com$')
 
-OPENIDPROVIDERARN=$(aws iam create-open-id-connect-provider \
-	--url https://token.actions.githubusercontent.com \
-	--client-id-list "sts.amazonaws.com" \
-	--thumbprint-list ${THUMBLIST} \
-	| jq -r .OpenIDConnectProviderArn)
+if [ -n "$OPENIDPROVIDERARN" ]
+then
+	echo "OIDC provider already exists, reusing: ${OPENIDPROVIDERARN}"
+else
+	openssl s_client -servername token.actions.githubusercontent.com -showcerts -connect token.actions.githubusercontent.com:443 < /dev/null 2>/dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sed "0,/-END CERTIFICATE-/d" > certificate.crt
+	THUMBLIST=$(openssl x509 -in certificate.crt -fingerprint -noout | cut -f2 -d'=' | tr -d ':' | tr '[:upper:]' '[:lower:]')
+
+	OPENIDPROVIDERARN=$(aws iam create-open-id-connect-provider \
+		--url https://token.actions.githubusercontent.com \
+		--client-id-list "sts.amazonaws.com" \
+		--thumbprint-list ${THUMBLIST} \
+		| jq -r .OpenIDConnectProviderArn)
+fi
 
 cat > trust-policy.json <<EOF
 {
@@ -65,6 +72,12 @@ cat > trust-policy.json <<EOF
     ]
 }
 EOF
-aws iam create-role --role-name ${ROLE_NAME} --assume-role-policy-document file://trust-policy.json > /dev/null
+if aws iam get-role --role-name ${ROLE_NAME} > /dev/null 2>&1
+then
+	echo "Role ${ROLE_NAME} already exists, updating its trust policy"
+	aws iam update-assume-role-policy --role-name ${ROLE_NAME} --policy-document file://trust-policy.json
+else
+	aws iam create-role --role-name ${ROLE_NAME} --assume-role-policy-document file://trust-policy.json > /dev/null
+fi
 ROLE_ARN=$(aws iam get-role --role-name  ${ROLE_NAME} | jq -r '.Role .Arn')
 echo "This is the role-to-assume: ${ROLE_ARN}"

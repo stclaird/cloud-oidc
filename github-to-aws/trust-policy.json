@@ -4,7 +4,7 @@
       {
         "Effect": "Allow",
         "Principal": {
-          "Federated": "arn:aws:iam::${AWS_ACCOUNT_ID}:oidc-provider/token.actions.githubusercontent.com"
+          "Federated": "arn:aws:iam::085980781442:oidc-provider/token.actions.githubusercontent.com"
         },
         "Action": "sts:AssumeRoleWithWebIdentity",
         "Condition": {
@@ -12,7 +12,7 @@
               "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
             },
             "StringLike": {
-              "token.actions.githubusercontent.com:sub": "repo:${REPO_VALUE}"
+              "token.actions.githubusercontent.com:sub": "repo:extrac-eu.ghe.com/engineering/PackageManager:*"
             }
         }
       }
